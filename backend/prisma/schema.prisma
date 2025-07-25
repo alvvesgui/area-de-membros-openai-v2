@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           Int          @id @default(autoincrement())
+  email        String       @unique
+  name         String?
+  password     String?
+  oauthId      String?      // para login com Google
+  createdAt    DateTime     @default(now())
+  chats        Chat[]
+  conversations Conversation[] // Relacionamento com Conversation
+  isSubscriber Boolean      @default(false)
+}
+
+model Chat {
+  id           Int      @id @default(autoincrement())
+  user         User     @relation(fields: [userId], references: [id])
+  userId       Int
+  message      String
+  sender       String   // 'user' ou 'agent'
+  createdAt    DateTime @default(now())
+  isSubscriber Boolean  @default(false)
+}
+
+model Conversation {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question  String
+  answer    String?  // <--- CORREÇÃO AQUI: ADICIONE O '?' PARA TORNAR OPCIONAL
+  createdAt DateTime @default(now())
+}
