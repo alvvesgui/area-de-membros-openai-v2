@@ -19,7 +19,7 @@ interface Conversation {
   userId: number;
   question: string;
   answer?: string;
-  timestamp: string;
+  timestamp: string; 
 }
 
 export function ConversationHistory() {
@@ -29,18 +29,22 @@ export function ConversationHistory() {
 
   const fetchConversations = useCallback(async () => {
     setLoading(true); 
-    setError(null);   
+    setError(null);    
 
     try {
       const data = await getChatHistory();
       setConversations(data); 
-    } catch (err: any) {
-      if (err.message.includes('Usuário não autenticado')) {
-        setError('Sessão expirada ou usuário não autenticado. Por favor, faça login novamente.');
-        localStorage.removeItem('access_token');    
-        localStorage.removeItem('is_subscriber'); 
-      } else {
-        setError(err.message || 'Falha ao carregar histórico de conversas.');
+    } catch (err: unknown) { // ALTERAÇÃO AQUI: 'err' agora é 'unknown'
+      if (err instanceof Error) { // Verificação de tipo
+        if (err.message.includes('Usuário não autenticado')) {
+          setError('Sessão expirada ou usuário não autenticado. Por favor, faça login novamente.');
+          localStorage.removeItem('access_token');    
+          localStorage.removeItem('is_subscriber'); 
+        } else {
+          setError(err.message || 'Falha ao carregar histórico de conversas.');
+        }
+      } else { // Caso o erro não seja uma instância de Error
+        setError('Falha ao carregar histórico de conversas: ' + JSON.stringify(err));
       }
     } finally {
       setLoading(false); 

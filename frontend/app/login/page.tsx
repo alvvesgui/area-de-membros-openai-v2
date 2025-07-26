@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 
 // IMPORTAÇÕES DO GOOGLE OAUTH
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from '@react-oauth/google';
 
 // **ESTE É O LOCAL CORRETO PARA ESSAS VARIÁVEIS**
 // Variável de ambiente para o Google Client ID (para frontend)
@@ -77,8 +77,12 @@ export default function LoginPage() {
       localStorage.setItem("is_subscriber", data.isSubscriber);
 
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) { // ALTERAÇÃO AQUI: 'err' agora é 'unknown'
+      if (err instanceof Error) { // Verificação de tipo
+        setError(err.message);
+      } else {
+        setError("Ocorreu um erro desconhecido durante o login."); // Mensagem genérica para outros tipos de erro
+      }
     } finally {
       setLoading(false);
     }
@@ -86,7 +90,7 @@ export default function LoginPage() {
 
   // --- FUNÇÕES DE LOGIN DO GOOGLE ---
   // Função que será chamada quando o login com Google for bem-sucedido
-  const onGoogleLoginSuccess = async (credentialResponse: any) => {
+  const onGoogleLoginSuccess = async (credentialResponse: CredentialResponse) => {
     console.log('Login Google SUCESSO:', credentialResponse);
     if (!credentialResponse.credential) {
       setError("Token de credencial do Google não recebido.");
@@ -115,8 +119,12 @@ export default function LoginPage() {
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('is_subscriber', data.isSubscriber);
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) { // ALTERAÇÃO AQUI: 'err' agora é 'unknown'
+      if (err instanceof Error) { // Verificação de tipo
+        setError(err.message);
+      } else {
+        setError('Ocorreu um erro desconhecido no login com Google.'); // Mensagem genérica
+      }
     } finally {
       setLoading(false);
     }
@@ -132,7 +140,7 @@ export default function LoginPage() {
   return (
     // IMPORTANTE: Envolver todo o componente com GoogleOAuthProvider
     // Ele precisa do clientId para funcionar.
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID || ""}> 
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID || ""}>
       <div className="relative flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:flex-row md:justify-between md:p-8">
         {/* Login Card Section */}
         <div className="flex w-full items-center justify-center md:w-1/2">
