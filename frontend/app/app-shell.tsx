@@ -2,7 +2,7 @@
 "use client"; // ESSENCIAL: Este é um Client Component
 
 import { Sidebar, SidebarProvider } from "@/components/ui/sidebar";
-import { DashboardHeader } from "@/components/ui/dashboard-header";
+import DashboardHeader from "@/components/ui/dashboard-header";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { usePathname } from 'next/navigation'; // Hook para obter a rota atual
 
