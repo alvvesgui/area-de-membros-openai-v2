@@ -42,10 +42,6 @@ export default function DashboardPage() {
     }
   }, [messages]);
 
-  useEffect(() => {
-    fetchConversations();
-  }, []);
-
   const fetchConversations = async () => {
     setIsLoading(true);
     try {
@@ -76,6 +72,10 @@ export default function DashboardPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
 
   const loadConversation = async (convId: string) => {
     setIsLoading(true);
@@ -111,7 +111,7 @@ export default function DashboardPage() {
         text: msg.text,
       }));
       setMessages(loadedMessages);
-    } catch (error) {
+    } catch (error: Error | unknown) {
       console.error(`Erro ao carregar conversa ${convId}:`, error);
       setMessages([{ sender: 'agent', text: 'Não foi possível carregar esta conversa.' }]);
     } finally {
@@ -166,9 +166,9 @@ export default function DashboardPage() {
       }
       alert('Conversa excluída com sucesso!');
 
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error("Erro ao excluir conversa:", error);
-      alert(`Falha ao excluir conversa: ${error.message}`);
+      alert(`Falha ao excluir conversa: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
       setIsLoading(false);
     }
@@ -225,9 +225,9 @@ export default function DashboardPage() {
 
       setMessages(prevMessages => [...prevMessages, { sender: 'agent', text: agentResponseText }]);
 
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error("Erro ao comunicar com o agente:", error);
-      setMessages(prevMessages => [...prevMessages, { sender: 'agent', text: `Desculpe, ocorreu um erro: ${error.message || 'Não consegui me conectar com o agente.'}` }]);
+      setMessages(prevMessages => [...prevMessages, { sender: 'agent', text: `Desculpe, ocorreu um erro: ${error instanceof Error ? error.message : 'Não consegui me conectar com o agente.'}` }]);
     } finally {
       setIsLoading(false);
     }
@@ -248,18 +248,13 @@ export default function DashboardPage() {
     router.push('/login');
   };
 
-  // --- ALTERAÇÃO IMPORTANTE AQUI: NOVA FUNÇÃO ---
-  // Função para renderizar as mensagens do agente com Markdown
   const renderAgentMessage = (text: string) => {
-    // Converte o Markdown para HTML e sanitiza o resultado para segurança
     const sanitizedHtml = DOMPurify.sanitize(marked.parse(text, { async: false }));
     return { __html: sanitizedHtml };
   };
 
   return (
     <div className="flex h-screen bg-gray-100 font-sans relative">
-
-      {/* Botão de Abrir Sidebar - Visível APENAS em Mobile e QUANDO A SIDEBAR NÃO ESTÁ ABERTA */}
       {!isSidebarOpen && (
         <button
           onClick={() => setIsSidebarOpen(true)}
@@ -269,15 +264,12 @@ export default function DashboardPage() {
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-menu"><line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" /></svg>
         </button>
       )}
-
-      {/* Sidebar - Responsiva */}
       <div
         className={`fixed inset-y-0 left-0 bg-white shadow-lg p-4 flex flex-col justify-between z-40 transition-transform duration-300 ease-in-out
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           md:static md:translate-x-0 md:w-72 md:flex-shrink-0 md:h-auto md:max-h-full w-full max-w-xs sm:max-w-sm`}
       >
         <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-          {/* Botão de Fechar Sidebar - Visível APENAS em Mobile */}
           <div className="flex justify-end md:hidden mb-4">
             <button
               onClick={() => setIsSidebarOpen(false)}
@@ -287,21 +279,15 @@ export default function DashboardPage() {
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
             </button>
           </div>
-
-          {/* Logo */}
           <div className="flex items-center justify-center mb-6 py-2 border-b border-gray-200">
             <img src="images/logo.png" alt="Leadrix Logo" className="h-25" />
           </div>
-
-          {/* Botão de Nova Conversa */}
           <button
             onClick={startNewConversation}
             className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-200 ease-in-out text-lg font-medium shadow-md mb-4"
           >
             + Nova Conversa
           </button>
-
-          {/* Seção de Histórico de Conversas */}
           <div className="mt-6">
             <h3 className="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
               Histórico:
@@ -344,8 +330,6 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-
-        {/* BOTÃO DE AJUDA - Fica fixo na parte inferior */}
         <div className="flex flex-col mt-auto pt-4 border-t border-gray-200">
           <button
             onClick={handleHelpClick}
@@ -355,40 +339,28 @@ export default function DashboardPage() {
           </button>
         </div>
       </div>
-
-      {/* Overlay para fechar sidebar ao clicar fora (somente mobile) */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         ></div>
       )}
-
-      {/* Conteúdo Principal do Chat */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header do Chat */}
         <div className="bg-white shadow-md p-5 flex items-center justify-between border-b border-gray-200 relative">
-          {/* Lado Esquerdo do Cabeçalho (Botão de Menu/Título Desktop) */}
           <div className="flex items-center">
             <h2 className="text-2xl font-bold text-gray-800 hidden md:block">Agente de IA Leadrix</h2>
           </div>
-
-          {/* Título da Conversa - CENTRALIZADO e visível APENAS em MOBILE (e quando a sidebar não está aberta) */}
           {conversationId && !isSidebarOpen && (
             <span className="md:hidden absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 text-sm text-gray-600 font-semibold truncate max-w-[calc(100%-160px)] text-center">
               {conversations.find(c => c.id === conversationId)?.title || 'Conversa Selecionada'}
             </span>
           )}
-
-          {/* Lado Direito do Cabeçalho (Conversa Atual Desktop e Botão Sair) */}
           <div className="flex items-center space-x-4 ml-auto">
-            {/* Título da conversa em desktop */}
             {conversationId && (
               <span className="text-base text-gray-500 hidden md:block">
                 Conversa atual: <span className="font-semibold">{conversations.find(c => c.id === conversationId)?.title || 'Carregando...'}</span>
               </span>
             )}
-            {/* Botão de Sair - Este botão de sair é do header do chat, não da sidebar */}
             <button
               onClick={handleLogout}
               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-200 ease-in-out text-base font-medium shadow-md"
@@ -398,8 +370,6 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
-
-        {/* Área de Mensagens do Chat */}
         <div ref={chatContainerRef} className="flex-1 p-6 overflow-y-auto bg-gray-50">
           {messages.length === 0 && !isLoading ? (
             <div className="text-center text-gray-500 mt-20">
@@ -432,12 +402,9 @@ export default function DashboardPage() {
                       : 'bg-gray-300 text-gray-800 rounded-bl-none'
                   } shadow-md text-base`}
                 >
-                  {/* --- ALTERAÇÃO IMPORTANTE AQUI: RENDERIZAÇÃO CONDICIONAL --- */}
-                  {/* Se a mensagem for do agente, renderiza com a função de Markdown */}
                   {msg.sender === 'agent' ? (
                     <div className="markdown-body" dangerouslySetInnerHTML={renderAgentMessage(msg.text)} />
                   ) : (
-                    // Se for do usuário, renderiza como texto simples
                     msg.text
                   )}
                 </div>
@@ -456,8 +423,6 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
-
-        {/* Área de Input do Chat */}
         <div className="bg-white p-6 border-t border-gray-200 flex items-center shadow-lg">
           <input
             type="text"
@@ -482,8 +447,6 @@ export default function DashboardPage() {
           </button>
         </div>
       </div>
-      
-      {/* --- ALTERAÇÃO IMPORTANTE AQUI: ESTILIZAÇÃO PARA FORMATO DO MARKDOWN --- */}
       <style jsx>{`
         .markdown-body h1,
         .markdown-body h2,
