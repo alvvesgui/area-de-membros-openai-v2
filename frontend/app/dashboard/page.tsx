@@ -1,3 +1,4 @@
+// Forçando um novo deploy na Vercel
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
