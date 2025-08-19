@@ -19,7 +19,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed": "npx ts-node prisma/seed.ts",
-    "create-admin-user": "npx ts-node create-admin-user.ts"
+    "create-admin-user": "npx ts-node create-admin-user.ts",
+    "deploy-and-seed": "npx prisma migrate deploy && npm run create-admin-user"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.0.2",
