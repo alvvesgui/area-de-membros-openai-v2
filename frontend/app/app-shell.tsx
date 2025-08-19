@@ -1,7 +1,6 @@
 // frontend/app/app-shell.tsx
 "use client"; // ESSENCIAL: Este é um Client Component
 
-import { Sidebar, SidebarProvider } from "@/components/ui/sidebar";
 import DashboardHeader from "@/components/ui/dashboard-header";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { usePathname } from 'next/navigation'; // Hook para obter a rota atual
@@ -24,18 +23,15 @@ export function AppShell({ children }: AppShellProps) {
 
   // Para todas as outras páginas, renderize o layout completo do dashboard
   return (
-    <SidebarProvider>
-      <TooltipProvider>
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <div className="flex flex-1 flex-col">
-            <DashboardHeader />
-            <main className="flex-1 overflow-auto pt-16">
-              {children}
-            </main>
-          </div>
+    <TooltipProvider>
+      <div className="flex min-h-screen">
+        <div className="flex flex-1 flex-col">
+          <DashboardHeader />
+          <main className="flex-1 overflow-auto pt-16">
+            {children}
+          </main>
         </div>
-      </TooltipProvider>
-    </SidebarProvider>
+      </div>
+    </TooltipProvider>
   );
 }

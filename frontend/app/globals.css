@@ -120,3 +120,49 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Animação para os pontinhos de "digitando..." */
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-5px);
+  }
+}
+
+.dot1 {
+  animation: bounce 1s infinite 0.1s;
+}
+
+.dot2 {
+  animation: bounce 1s infinite 0.2s;
+}
+
+.dot3 {
+  animation: bounce 1s infinite 0.3s;
+}
+
+/* Estilos para a barra de rolagem personalizada */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background-color: #f1f1f1;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #a0aec0;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #718096;
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #a0aec0 #f1f1f1;
+}

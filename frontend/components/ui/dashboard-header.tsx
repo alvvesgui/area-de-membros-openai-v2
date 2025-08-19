@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/sheet";
 import { Search, History, HelpCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,14 +24,12 @@ interface DashboardHeaderProps {
 }
 
 export default function DashboardHeader({ onHelpClick }: DashboardHeaderProps) {
-  const { isMobile, setOpenMobile } = useSidebar();
+  // Removi useSidebar, SidebarTrigger e todo código que usava eles
 
   return (
     <TooltipProvider>
       <header className="fixed top-0 z-10 flex h-16 w-full items-center justify-between border-b bg-background px-4 md:px-6">
-        {isMobile && (
-          <SidebarTrigger onClick={() => setOpenMobile(true)} className="mr-2" />
-        )}
+        {/* Removi o botão SidebarTrigger porque não tem mais sidebar */}
 
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

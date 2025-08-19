@@ -1,18 +1,13 @@
-// C:\Users\guiga\area-de-membros-v2\frontend\app\login\page.tsx
-
 "use client";
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
-import { Mail, Lock, LogIn, Chrome, KeyRound } from "lucide-react";
-
+import { Mail, Lock, LogIn, Chrome, KeyRound } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -21,15 +16,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from "@react-oauth/google";
 
-// IMPORTAÇÕES DO GOOGLE OAUTH
-import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from '@react-oauth/google';
-
-// **ESTE É O LOCAL CORRETO PARA ESSAS VARIÁVEIS**
-// Variável de ambiente para o Google Client ID (para frontend)
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-
-// Variável de ambiente para a URL base do backend
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export default function LoginPage() {
@@ -39,31 +28,24 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const showAlert = (message: string) => {
-    alert(message);
-  };
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetMessage, setResetMessage] = useState("");
+  const [isResetting, setIsResetting] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const showAlert = (message: string) => alert(message);
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
-
-    if (!email.trim()) {
-      showAlert("Por favor, preencha o campo de e-mail.");
-      return;
-    }
-    if (!password.trim()) {
-      showAlert("Por favor, preencha o campo de senha.");
-      return;
-    }
+    if (!email.trim()) return showAlert("Por favor, preencha o campo de e-mail.");
+    if (!password.trim()) return showAlert("Por favor, preencha o campo de senha.");
 
     setError(null);
     setLoading(true);
-
     try {
       const response = await fetch(`${BACKEND_BASE_URL}/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
@@ -75,203 +57,408 @@ export default function LoginPage() {
       const data = await response.json();
       localStorage.setItem("access_token", data.access_token);
       localStorage.setItem("is_subscriber", data.isSubscriber);
-
       router.push("/dashboard");
-    } catch (err: unknown) { // ALTERAÇÃO AQUI: 'err' agora é 'unknown'
-      if (err instanceof Error) { // Verificação de tipo
+    } catch (err: unknown) {
+      if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("Ocorreu um erro desconhecido durante o login."); // Mensagem genérica para outros tipos de erro
+        setError("Ocorreu um erro desconhecido durante o login.");
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // --- FUNÇÕES DE LOGIN DO GOOGLE ---
-  // Função que será chamada quando o login com Google for bem-sucedido
   const onGoogleLoginSuccess = async (credentialResponse: CredentialResponse) => {
-    console.log('Login Google SUCESSO:', credentialResponse);
     if (!credentialResponse.credential) {
       setError("Token de credencial do Google não recebido.");
       return;
     }
-
     setLoading(true);
     setError(null);
-
     try {
-      // Envia o idToken para o seu backend
       const response = await fetch(`${BACKEND_BASE_URL}/auth/login/google`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ idToken: credentialResponse.credential }), // 'credential' é o idToken
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken: credentialResponse.credential }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Erro ao fazer login com Google no backend.');
+        throw new Error(errorData.message || "Erro ao fazer login com Google no backend.");
       }
 
       const data = await response.json();
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('is_subscriber', data.isSubscriber);
-      router.push('/dashboard');
-    } catch (err: unknown) { // ALTERAÇÃO AQUI: 'err' agora é 'unknown'
-      if (err instanceof Error) { // Verificação de tipo
+      localStorage.setItem("access_token", data.access_token);
+      localStorage.setItem("is_subscriber", data.isSubscriber);
+      router.push("/dashboard");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Ocorreu um erro desconhecido no login com Google.'); // Mensagem genérica
+        setError("Ocorreu um erro desconhecido no login com Google.");
       }
     } finally {
       setLoading(false);
     }
   };
 
-  // Função para lidar com falhas no login do Google
   const onGoogleLoginError = () => {
-    console.error('Login Google FALHOU');
-    setError('Login com Google falhou. Tente novamente.');
+    console.error("Login Google FALHOU");
+    setError("Login com Google falhou. Tente novamente.");
   };
 
-  // --- Renderização do Componente ---
+  const handleForgotPassword = async () => {
+    if (!resetEmail.trim()) {
+      setResetMessage("Por favor, preencha o campo de e-mail.");
+      return;
+    }
+    setIsResetting(true);
+    setResetMessage("");
+    try {
+      const response = await fetch(`${BACKEND_BASE_URL}/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: resetEmail }),
+      });
+      const data = await response.json();
+      setResetMessage(response.ok ? data.message : data.error);
+    } catch (err) {
+      setResetMessage("Ocorreu um erro. Tente novamente.");
+      console.error("Erro ao enviar e-mail de redefinição:", err);
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   return (
-    // IMPORTANTE: Envolver todo o componente com GoogleOAuthProvider
-    // Ele precisa do clientId para funcionar.
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID || ""}>
-      <div className="relative flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:flex-row md:justify-between md:p-8">
-        {/* Login Card Section */}
-        <div className="flex w-full items-center justify-center md:w-1/2">
-          <Card className="w-full max-w-md p-6 shadow-lg md:p-8">
-            <CardHeader className="items-center space-y-4">
+      <div className="min-h-screen w-full bg-white md:flex md:h-screen md:overflow-hidden">
+        {/* Layout para Mobile (coluna única) */}
+        <div className="flex min-h-screen flex-col md:hidden">
+          <div className="relative flex h-[35vh] w-full flex-col bg-black text-white">
+            <div className="z-10 flex items-center justify-start px-4 py-3">
+              <Image src="/images/LOGO_LEADRIX.png" alt="Logo" width={100} height={30} className="h-auto w-24" priority />
+            </div>
+            <div className="relative flex-1">
+             
               <Image
-                src="/images/logo.png"
-                alt="Área de Membros V2 Logo"
-                width={200}
-                height={200}
-                className="mb-4"
+                src="/images/imagefront.png"
+                alt="Pessoa interagindo com IA em ambiente futurista e tecnológico"
+                fill
+                sizes="(max-width: 768px) 100vw, 33vw" // Otimização para mobile
+                className="object-cover opacity-90"
+                priority
               />
-              <CardTitle className="text-center space-y-1">Transforme sua experiência com IA!</CardTitle>
-              <CardDescription className="text-center text-muted-foreground">
-                Faça login para acessar seu painel inteligente
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Exibição de erro do backend */}
-              {error && (
-                <div className="text-red-500 text-sm text-center font-medium">
-                  {error}
-                </div>
-              )}
-
-              <form onSubmit={handleLogin} className="grid gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="email">E-mail:</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="seu@email.com"
-                      className="pl-10"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="password">Senha:</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="********"
-                      className="pl-10"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  <LogIn className="mr-2 h-4 w-4" /> {loading ? "Entrando..." : "Entrar"}
-                </Button>
-              </form>
-
-              {/* Separator "ou" - Centralized */}
-              <div className="relative flex w-full items-center justify-center">
-                <Separator className="flex-grow" />
-                <span className="mx-4 text-sm text-muted-foreground">ou</span>
-                <Separator className="flex-grow" />
-              </div>
-
-              {/* SUBSTITUIÇÃO AQUI: Usando GoogleLogin diretamente */}
-              {GOOGLE_CLIENT_ID ? ( // Renderiza apenas se o Client ID estiver configurado
-                <div className="w-full flex justify-center">
-                  <GoogleLogin
-                    onSuccess={onGoogleLoginSuccess}
-                    onError={onGoogleLoginError}
-                    width="100%" // Ajusta a largura do botão
-                    text="continue_with" // Opcional: Altera o texto do botão
-                    theme="filled_blue" // Opcional: Altera o tema
-                    // Outras props do GoogleLogin podem ser adicionadas aqui
-                    // Se precisar de um estilo customizado, o ideal é usar `render` prop
-                    // mas para começar, o botão padrão já ajuda.
-                  />
-                </div>
-              ) : (
-                <Button variant="outline" className="w-full bg-transparent" disabled={true}>
-                  <Chrome className="mr-2 h-4 w-4" /> Login com Google (ID não configurado)
-                </Button>
-              )}
-
-
-              {/* Esqueceu a Senha? Modal Trigger */}
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="link" className="w-full text-sm text-primary hover:underline">
-                    Esqueceu a senha?
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Redefinir Senha</DialogTitle>
-                    <DialogDescription>
-                      Digite seu e-mail abaixo para receber um link de redefinição de senha.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="reset-email">E-mail:</Label>
-                      <Input id="reset-email" type="email" placeholder="seu@email.com" required />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto bg-white px-4 py-6">
+            <div className="mx-auto max-w-sm">
+              <Card className="border-0 bg-transparent shadow-none">
+                <CardHeader className="space-y-2 p-0">
+                  <CardTitle className="text-xl font-semibold text-gray-900">Acesse sua conta</CardTitle>
+                  <CardDescription className="text-sm text-gray-500">
+                    Entre com seu e-mail e senha ou continue com o Google
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="mt-6 space-y-5 p-0">
+                  {error && (
+                    <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-center text-sm font-medium text-red-700">
+                      {error}
                     </div>
+                  )}
+                  <form onSubmit={handleLogin} className="grid gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="email" className="text-sm text-gray-800">
+                        E-mail
+                      </Label>
+                      <div className="relative">
+                        <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          className="h-12 rounded-md border-gray-200 bg-white pl-10 text-gray-900 placeholder:text-gray-400 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-0"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="password" className="text-sm text-gray-800">
+                        Senha
+                      </Label>
+                      <div className="relative">
+                        <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <Input
+                          id="password"
+                          type="password"
+                          placeholder="********"
+                          className="h-12 rounded-md border-gray-200 bg-white pl-10 text-gray-900 placeholder:text-gray-400 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-0"
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="group mt-2 h-12 w-full translate-y-0 rounded-md bg-gradient-to-r from-indigo-500 via-violet-600 to-fuchsia-600 text-white shadow-md transition-all duration-200 hover:scale-[1.01] hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-0 disabled:opacity-70"
+                    >
+                      <LogIn className="mr-2 h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+                      {loading ? "Entrando..." : "Entrar"}
+                    </Button>
+                  </form>
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-gray-200" />
+                    <span className="text-xs text-gray-500">ou</span>
+                    <div className="h-px flex-1 bg-gray-200" />
                   </div>
-                  <Button type="submit" className="w-full">
-                    <KeyRound className="mr-2 h-4 w-4" /> Enviar Link
-                  </Button>
-                </DialogContent>
-              </Dialog>
-
-              {/* Test Button for Dashboard */}
-              <div className="mt-6 text-center">
-              </div>
-            </CardContent>
-          </Card>
+                  {GOOGLE_CLIENT_ID ? (
+                    <div className="w-full">
+                      <GoogleLogin
+                        onSuccess={onGoogleLoginSuccess}
+                        onError={onGoogleLoginError}
+                        width="100%"
+                        text="continue_with"
+                        theme="filled_blue"
+                      />
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="h-12 w-full border-gray-200 bg-white text-gray-900 transition-all duration-200 hover:scale-[1.01] hover:bg-gray-50"
+                      disabled
+                    >
+                      <Chrome className="mr-2 h-4 w-4" />
+                      Login com Google (ID não configurado)
+                    </Button>
+                  )}
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="link"
+                        className="mx-auto block w-full text-center text-sm font-medium text-indigo-600 hover:text-violet-600 hover:underline"
+                      >
+                        Esqueceu a senha?
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="mx-4 max-w-[calc(100vw-2rem)] sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Redefinir Senha</DialogTitle>
+                        <DialogDescription>
+                          Digite seu e-mail abaixo para receber um link de redefinição de senha.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="reset-email">E-mail</Label>
+                          <Input
+                            id="reset-email"
+                            type="email"
+                            placeholder="seu@email.com"
+                            required
+                            value={resetEmail}
+                            onChange={(e) => setResetEmail(e.target.value)}
+                            className="h-11"
+                          />
+                        </div>
+                        {resetMessage && (
+                          <p
+                            className={`text-center text-sm ${
+                              resetMessage.includes("sucesso") ? "text-green-600" : "text-red-600"
+                            }`}
+                          >
+                            {resetMessage}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        onClick={handleForgotPassword}
+                        className="h-11 w-full bg-gradient-to-r from-indigo-500 to-violet-600 text-white transition-all duration-200 hover:scale-[1.01]"
+                        disabled={isResetting}
+                      >
+                        <KeyRound className="mr-2 h-4 w-4" />
+                        {isResetting ? "Enviando..." : "Enviar Link"}
+                      </Button>
+                    </DialogContent>
+                  </Dialog>
+                  <div className="h-16" />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
 
-        {/* Image Section */}
-        <div className="hidden w-full items-center justify-center p-8 md:flex md:w-1/2">
-          <Image
-            src="/images/robot-human.png"
-            alt="Human and robot conversing"
-            width={500}
-            height={500}
-            className="h-auto max-w-full rounded-lg object-cover shadow-xl"
-          />
+        {/* Layout para Desktop (duas colunas) */}
+        <div className="hidden md:flex md:h-full md:w-full">
+          {/* Coluna Esquerda - Desktop (fundo branco) */}
+          <aside className="relative flex w-1/2 flex-col bg-white text-gray-800">
+            <div className="z-10 flex h-full w-full flex-col">
+              <div className="z-20 px-10 py-5">
+                <Image src="/images/logo.png" alt="Logo" width={160} height={48} className="h-auto w-40" priority />
+              </div>
+              <div className="relative flex-1">
+                {/* === MUDANÇA AQUI: IMAGEM PARA DESKTOP === */}
+                <Image
+                  src="/images/imagefront.png"
+                  alt="Pessoa interagindo com IA em ambiente futurista e tecnológico"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw" // Otimização para desktop
+                  className="object-cover opacity-90"
+                  priority
+                />
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-gray-200 via-white/20 to-transparent" />
+                <div className="pointer-events-none absolute bottom-6 left-10 right-10">
+                  <h2 className="text-2xl font-semibold tracking-tight text-gray-800/90">
+                    Tecnologia que potencializa sua jornada com IA
+                  </h2>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* Coluna Direita - Desktop */}
+          <main className="flex w-1/2 items-center justify-center bg-white">
+            <div className="mx-auto w-full max-w-md">
+              <Card className="border-0 bg-transparent shadow-none">
+                <CardHeader className="space-y-2 p-0">
+                  <CardTitle className="text-2xl font-semibold text-gray-900">Acesse sua conta</CardTitle>
+                  <CardDescription className="text-base text-gray-500">
+                    Entre com seu e-mail e senha ou continue com o Google
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="mt-6 space-y-5 p-0">
+                  {error && (
+                    <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-center text-sm font-medium text-red-700">
+                      {error}
+                    </div>
+                  )}
+                  <form onSubmit={handleLogin} className="grid gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="email-desktop" className="text-sm text-gray-800">
+                        E-mail
+                      </Label>
+                      <div className="relative">
+                        <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <Input
+                          id="email-desktop"
+                          type="email"
+                          placeholder="seu@email.com"
+                          className="h-11 rounded-md border-gray-200 bg-white pl-10 text-gray-900 placeholder:text-gray-400 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-0"
+                          required
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="password-desktop" className="text-sm text-gray-800">
+                        Senha
+                      </Label>
+                      <div className="relative">
+                        <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <Input
+                          id="password-desktop"
+                          type="password"
+                          placeholder="********"
+                          className="h-11 rounded-md border-gray-200 bg-white pl-10 text-gray-900 placeholder:text-gray-400 transition-all duration-200 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-0"
+                          required
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="group mt-2 h-11 w-full translate-y-0 rounded-md bg-gradient-to-r from-indigo-500 via-violet-600 to-fuchsia-600 text-white shadow-md transition-all duration-200 hover:scale-[1.01] hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-0 disabled:opacity-70"
+                    >
+                      <LogIn className="mr-2 h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+                      {loading ? "Entrando..." : "Entrar"}
+                    </Button>
+                  </form>
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-gray-200" />
+                    <span className="text-xs text-gray-500">ou</span>
+                    <div className="h-px flex-1 bg-gray-200" />
+                  </div>
+                  {GOOGLE_CLIENT_ID ? (
+                    <div className="w-full">
+                      <GoogleLogin
+                        onSuccess={onGoogleLoginSuccess}
+                        onError={onGoogleLoginError}
+                        width="100%"
+                        text="continue_with"
+                        theme="filled_blue"
+                      />
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="h-11 w-full border-gray-200 bg-white text-gray-900 transition-all duration-200 hover:scale-[1.01] hover:bg-gray-50"
+                      disabled
+                    >
+                      <Chrome className="mr-2 h-4 w-4" />
+                      Login com Google (ID não configurado)
+                    </Button>
+                  )}
+                  <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="link"
+                        className="mx-auto block w-full text-center text-sm font-medium text-indigo-600 hover:text-violet-600 hover:underline"
+                      >
+                        Esqueceu a senha?
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Redefinir Senha</DialogTitle>
+                        <DialogDescription>
+                          Digite seu e-mail abaixo para receber um link de redefinição de senha.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="reset-email-desktop">E-mail</Label>
+                          <Input
+                            id="reset-email-desktop"
+                            type="email"
+                            placeholder="seu@email.com"
+                            required
+                            value={resetEmail}
+                            onChange={(e) => setResetEmail(e.target.value)}
+                            className="h-11"
+                          />
+                        </div>
+                        {resetMessage && (
+                          <p
+                            className={`text-center text-sm ${
+                              resetMessage.includes("sucesso") ? "text-green-600" : "text-red-600"
+                            }`}
+                          >
+                            {resetMessage}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        onClick={handleForgotPassword}
+                        className="h-11 w-full bg-gradient-to-r from-indigo-500 to-violet-600 text-white transition-all duration-200 hover:scale-[1.01]"
+                        disabled={isResetting}
+                      >
+                        <KeyRound className="mr-2 h-4 w-4" />
+                        {isResetting ? "Enviando..." : "Enviar Link"}
+                      </Button>
+                    </DialogContent>
+                  </Dialog>
+                </CardContent>
+              </Card>
+            </div>
+          </main>
         </div>
       </div>
     </GoogleOAuthProvider>
