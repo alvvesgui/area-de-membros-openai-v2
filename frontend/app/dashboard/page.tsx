@@ -1,12 +1,9 @@
-// frontend/app/dashboard/page.tsx
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-
-// Importações dinâmicas e condicionais para carregar as bibliotecas apenas no lado do cliente
-const marked = typeof window !== 'undefined' ? require('marked').marked : null;
-const DOMPurify = typeof window !== 'undefined' ? require('dompurify') : null;
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 
 interface Message {
   sender: 'user' | 'agent';
@@ -109,7 +106,7 @@ export default function DashboardPage() {
         throw new Error(`Erro ao carregar conversa: ${response.statusText}`);
       }
       const data = await response.json();
-      const loadedMessages: Message[] = data.messages.map((msg: any) => ({
+      const loadedMessages: Message[] = data.messages.map((msg: { sender: 'user' | 'agent'; text: string }) => ({
         sender: msg.sender,
         text: msg.text,
       }));
@@ -254,12 +251,8 @@ export default function DashboardPage() {
   // --- ALTERAÇÃO IMPORTANTE AQUI: NOVA FUNÇÃO ---
   // Função para renderizar as mensagens do agente com Markdown
   const renderAgentMessage = (text: string) => {
-    // Verifica se as bibliotecas foram carregadas
-    if (!marked || !DOMPurify) {
-      return { __html: text };
-    }
     // Converte o Markdown para HTML e sanitiza o resultado para segurança
-    const sanitizedHtml = DOMPurify.sanitize(marked(text));
+    const sanitizedHtml = DOMPurify.sanitize(marked.parse(text, { async: false }));
     return { __html: sanitizedHtml };
   };
 
@@ -273,7 +266,7 @@ export default function DashboardPage() {
           className="md:hidden fixed top-4 left-4 p-2 bg-blue-600 text-white rounded-lg z-50 shadow-lg"
           aria-label="Abrir menu"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-menu"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-menu"><line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" /></svg>
         </button>
       )}
 
@@ -291,7 +284,7 @@ export default function DashboardPage() {
               className="p-2 text-gray-600 hover:text-gray-800 rounded-lg"
               aria-label="Fechar menu"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
             </button>
           </div>
 
@@ -332,7 +325,7 @@ export default function DashboardPage() {
                     >
                       {conv.title}
                       <p className="text-xs text-gray-400 mt-1">
-                        {new Date(conv.updatedAt).toLocaleDateString('pt-BR')} {new Date(conv.updatedAt).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
+                        {new Date(conv.updatedAt).toLocaleDateString('pt-BR')} {new Date(conv.updatedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </button>
                     <button
@@ -343,7 +336,7 @@ export default function DashboardPage() {
                       className="ml-2 p-1 rounded-full text-gray-400 hover:bg-red-100 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-150 ease-in-out"
                       title="Excluir conversa"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-trash-2"><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /><line x1="10" x2="10" y1="11" y2="17" /><line x1="14" x2="14" y1="11" y2="17" /></svg>
                     </button>
                   </div>
                 ))
