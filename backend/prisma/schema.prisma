@@ -4,10 +4,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-generator proxy {
-  provider = "prisma-proxy"
-}
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
