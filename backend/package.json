@@ -21,7 +21,7 @@
     "seed": "npx ts-node prisma/seed.ts",
     "create-admin-user": "npx ts-node create-admin-user.ts",
     "reset-db-and-deploy": "npx prisma migrate reset --force --skip-generate --skip-seed && npx prisma migrate deploy",
-    "deploy-and-seed": "npx prisma migrate deploy && npm run create-admin-user"
+    "deploy-and-seed": "npm run create-admin-user"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",
