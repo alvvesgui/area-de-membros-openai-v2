@@ -20,7 +20,8 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed": "npx ts-node prisma/seed.ts",
     "create-admin-user": "npx ts-node create-admin-user.ts",
-    "deploy-and-seed": "npx prisma migrate deploy && npm run create-admin-user"
+    "fix-migration-issue": "npx prisma migrate resolve --rolled-back 20250826_fix_user_id",
+    "deploy-and-seed": "npm run fix-migration-issue && npx prisma migrate deploy && npm run create-admin-user"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.0.2",
