@@ -1,7 +1,7 @@
 // backend/prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -10,44 +10,44 @@ datasource db {
 }
 
 model User {
-  id             Int            @id @default(autoincrement())
-  email          String         @unique
-  name           String?
-  password       String?
-  oauthId        String?
-  createdAt      DateTime       @default(now())
-  chats          Chat[]
-  conversations  Conversation[]
-  isSubscriber   Boolean        @default(false)
-  resetToken        String?
-  resetTokenExpiry  BigInt?
+  id               String         @id @default(uuid()) // Alterado para String e uuid()
+  email            String         @unique
+  name             String?
+  password         String?
+  oauthId          String?
+  createdAt        DateTime       @default(now())
+  chats            Chat[]
+  conversations    Conversation[]
+  isSubscriber     Boolean        @default(false)
+  resetToken       String?
+  resetTokenExpiry BigInt?
 }
 
-model Chat { // Este modelo provavelmente é legado e pode ser removido se não for mais usado
-  id             Int      @id @default(autoincrement())
-  user           User     @relation(fields: [userId], references: [id])
-  userId         Int
-  message        String
-  sender         String
-  createdAt      DateTime @default(now())
-  isSubscriber   Boolean  @default(false)
+model Chat {
+  id            String   @id @default(uuid()) // Alterado para String e uuid()
+  user          User     @relation(fields: [userId], references: [id])
+  userId        String   // Alterado para String para combinar com o User.id
+  message       String
+  sender        String
+  createdAt     DateTime @default(now())
+  isSubscriber  Boolean  @default(false)
 }
 
 model Conversation {
-  id        String    @id @default(cuid())
-  userId    Int
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  messages  Message[]
+  id           String    @id @default(uuid()) // Alterado de cuid() para uuid() por consistência
+  userId       String    // Alterado para String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  messages     Message[]
 }
 
 model Message {
-  id             String       @id @default(cuid())
-  conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender         String
-  text           String
-  createdAt      DateTime     @default(now())
+  id             String       @id @default(uuid()) // Alterado de cuid() para uuid() por consistência
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         String
+  text           String
+  createdAt      DateTime     @default(now())
 }
