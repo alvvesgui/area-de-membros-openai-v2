@@ -24,6 +24,7 @@
     "deploy-and-seed": "npx prisma migrate deploy && npm run create-admin-user"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.0.1",
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/common": "^11.1.5",
     "@nestjs/config": "^4.0.2",
