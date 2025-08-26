@@ -1,72 +1,96 @@
-import OpenAI from 'openai';
+// backend/app/api/chat/route.ts
 import { NextRequest, NextResponse } from 'next/server';
+import OpenAI from 'openai';
+import prisma from '../../../lib/prisma'; // seu arquivo lib/prisma.ts
 
-// Inicializa o cliente da OpenAI com sua chave de API
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// ID do seu agente, o "asst_..."
 const ASSISTANT_ID = 'asst_t7FWCeeQmALVKhbyf4UfsFHJ';
 
-// Define a função que irá lidar com as requisições POST
-async function handleChat(request: NextRequest) {
+interface ChatRequestBody {
+  messages: { text: string }[];
+  conversationId?: string;
+  userId: number;
+}
+
+export async function POST(request: NextRequest) {
   try {
-    const { messages, conversationId, userId } = await request.json();
+    const body: ChatRequestBody = await request.json();
+    const { messages, conversationId, userId } = body;
 
-    let threadId = conversationId;
+    let convId = conversationId;
 
-    // Se a conversa for nova (sem um ID), cria uma nova thread
-    if (!threadId) {
-      const thread = await openai.beta.threads.create();
-      threadId = thread.id;
-      // TODO: Salve este 'threadId' no seu banco de dados, associado ao 'userId'.
+    // Se não tiver conversa, cria uma nova no banco
+    if (!convId) {
+      const newConversation = await prisma.conversation.create({
+        data: {
+          userId,
+          title: messages[0]?.text || 'Nova conversa',
+        },
+      });
+      convId = newConversation.id;
     }
-    
-    // Pega a última mensagem do usuário do array de mensagens
-    const userMessage = messages[messages.length - 1].text;
+
+    const userMessageText = messages[messages.length - 1].text;
+
+    // Salva a mensagem do usuário no banco
+    await prisma.message.create({
+      data: {
+        conversationId: convId,
+        sender: 'user',
+        text: userMessageText,
+      },
+    });
+
+    // Cria a thread na OpenAI
+    let thread = await openai.beta.threads.create();
+    let threadId = thread.id;
 
     // Adiciona a mensagem do usuário à thread
-    await openai.beta.threads.messages.create(
-      threadId,
-      {
-        role: "user",
-        content: userMessage,
-      }
-    );
+    await openai.beta.threads.messages.create(threadId, {
+      role: 'user',
+      content: userMessageText,
+    });
 
-    // Inicia a execução do seu assistente
-    let run = await openai.beta.threads.runs.create(
-      threadId,
-      {
-        assistant_id: ASSISTANT_ID,
-      }
-    );
+    // Executa o assistente
+    let run = await openai.beta.threads.runs.create(threadId, { assistant_id: ASSISTANT_ID });
 
-    // Fica em um loop (polling) para checar o status da execução
-    while (run.status !== "completed") {
+    while (run.status !== 'completed') {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // SOLUÇÃO FINAL: A chamada para `retrieve` foi corrigida para usar snake_case
       run = await openai.beta.threads.runs.retrieve(run.id, { thread_id: threadId });
     }
 
-    // Pega as mensagens da thread após a execução para obter a resposta do agente
+    // Busca todas as mensagens da thread
     const threadMessages = await openai.beta.threads.messages.list(threadId);
 
-    // Extrai o conteúdo da última mensagem do assistente
-    const agentResponse = threadMessages.data[0].content[0].type === 'text' ? threadMessages.data[0].content[0].text.value : '';
+    // Pega a última mensagem do assistente
+    const lastAssistantMessage = [...threadMessages.data].reverse().find(m => m.role === 'assistant');
 
-    // TODO: Salve a resposta do agente no seu banco de dados para o histórico.
+    // Extrai o texto de forma segura
+    let agentResponse = '';
+    if (lastAssistantMessage && lastAssistantMessage.content.length > 0) {
+      const firstBlock = lastAssistantMessage.content[0];
+      if ('text' in firstBlock) {
+        agentResponse = firstBlock.text.value;
+      }
+    }
 
-    // Retorna a resposta e o ID da conversa para o frontend
-    return NextResponse.json({ response: agentResponse, conversationId: threadId });
+    // Salva a resposta do assistente no banco
+    if (agentResponse) {
+      await prisma.message.create({
+        data: {
+          conversationId: convId,
+          sender: 'assistant',
+          text: agentResponse,
+        },
+      });
+    }
 
+    return NextResponse.json({ response: agentResponse, conversationId: convId });
   } catch (error: any) {
-    console.error("Erro na API de Assistants:", error);
-    return NextResponse.json({ message: "Ocorreu um erro ao processar a requisição." }, { status: 500 });
+    console.error('Erro na API de Assistants:', error);
+    return NextResponse.json({ message: 'Ocorreu um erro ao processar a requisição.' }, { status: 500 });
   }
 }
-
-// Exporta a função para lidar com requisições POST
-export { handleChat as POST };
