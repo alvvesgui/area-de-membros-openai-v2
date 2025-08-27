@@ -20,6 +20,8 @@ model User {
   createdAt        DateTime       @default(now())
   conversations    Conversation[]
   isSubscriber     Boolean        @default(false)
+  
+  chats            Chat[] // CORREÇÃO: Adicione este campo para completar a relação com o modelo Chat
 }
 
 // CORREÇÃO: Usa IDs String com UUIDs
@@ -45,7 +47,7 @@ model Conversation {
   messages     Message[] // CORREÇÃO: Adiciona a relação com o modelo Message
 }
 
-// CORREÇÃO: Este modelo estava faltando
+// CORREÇÃO: Este modelo estava faltando e é essencial
 model Message {
   id             String       @id @default(uuid())
   conversationId String
