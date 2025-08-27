@@ -74,27 +74,22 @@ export class AuthService {
       const payload = ticket.getPayload();
 
       if (!payload || !payload.email || !payload.email_verified || !payload.sub) {
-        // Adicionada a verificação email_verified para segurança extra
         console.log('Erro: Payload do Google token inválido, incompleto ou email não verificado.');
         throw new UnauthorizedException('Token inválido ou email não verificado.');
       }
 
       console.log('Payload do Google token verificado:', payload.email);
 
-      // findGoogleUser AGORA APENAS ENCONTRA o usuário.
-      // Se não encontrar, ele lançará uma UnauthorizedException.
       const user = await this.findGoogleUser({
         email: payload.email,
-        name: payload.name || payload.email, // Garante que name não seja undefined
+        name: payload.name || payload.email,
         picture: payload.picture,
         googleId: payload.sub,
       });
 
-      // Se o usuário foi encontrado, gera o JWT para ele.
       return this.login(user);
     } catch (error) {
       console.error('Erro na verificação do ID Token do Google ou usuário não autorizado:', error.message);
-      // Re-lança a exceção original ou uma nova se for um erro genérico
       if (error instanceof UnauthorizedException) {
         throw error;
       }
@@ -103,8 +98,6 @@ export class AuthService {
   }
 
   // --- MÉTODO para ENCONTRAR (e NÃO MAIS CRIAR AUTOMATICAMENTE) o usuário Google ---
-  // Este método agora só retorna um usuário se ele JÁ EXISTIR no banco de dados.
-  // Caso contrário, lança uma UnauthorizedException.
   async findGoogleUser(profile: { email: string; name: string; picture?: string; googleId: string }) {
     console.log('--- Início findGoogleUser (APENAS ENCONTRA, NÃO CRIA) ---');
     console.log('Tentando encontrar usuário Google com email:', profile.email);
@@ -114,35 +107,12 @@ export class AuthService {
     });
 
     if (!user) {
-      // PONTO CRÍTICO DE SEGURANÇA: Se o usuário NÃO existe, ele não é um assinante pré-aprovado.
       console.log(`ERRO: Usuário Google com email "${profile.email}" NÃO encontrado no banco de dados. Acesso negado.`);
       throw new UnauthorizedException('Acesso negado. Seu email não está cadastrado como assinante.');
     } else {
       console.log('Usuário Google encontrado no banco de dados:', user.email);
-      // Opcional: Atualizar dados do usuário se necessário (ex: foto de perfil, googleId)
-      // Isso é seguro porque o usuário já existe e estamos apenas atualizando informações.
-      
-      // **IMPORTANTE: Se você não tem 'googleId' no seu schema.prisma, MANTENHA ESTE BLOCO COMENTADO.**
-      // **Se você adicionou 'googleId String? @unique' no seu schema.prisma, PODE DESCOMENTAR.**
-      /*
-      if (profile.name && user.name !== profile.name) {
-        user = await this.prisma.user.update({
-          where: { id: user.id },
-          data: { name: profile.name },
-        });
-        console.log('Nome do usuário Google atualizado.');
-      }
-      if (profile.googleId && (!user.googleId || user.googleId !== profile.googleId)) {
-        user = await this.prisma.user.update({
-          where: { id: user.id },
-          data: { googleId: profile.googleId },
-        });
-        console.log('Google ID do usuário atualizado/definido.');
-      }
-      */
     }
     
-    // Retorna o OBJETO USUÁRIO do banco de dados (somente se ele foi encontrado)
     return user;
   }
 
@@ -179,7 +149,7 @@ export class AuthService {
         email: data.email,
         password: hashedPassword,
         name: data.name || '',
-        isSubscriber: data.isSubscriber ?? true, // DEFINA COMO TRUE POR PADRÃO AQUI
+        isSubscriber: data.isSubscriber ?? true,
       },
     });
     console.log('Usuário cadastrado com sucesso:', user.email);
@@ -191,37 +161,32 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { email } });
 
     if (!user) {
-      // Por segurança, não informamos se o email não existe.
-      // Retornamos uma mensagem genérica de sucesso para evitar enumeração de usuários.
       console.log(`Tentativa de redefinição para email não encontrado: ${email}`);
       return { message: 'Se o email estiver cadastrado, você receberá um link de redefinição.' };
     }
 
-    // Se o usuário logou via Google e não tem senha manual, não permitimos redefinição por aqui
     if (!user.password) {
       console.log(`Usuário Google sem senha manual tentou redefinir: ${email}`);
       return { message: 'Se o email estiver cadastrado, você receberá um link de redefinição.' };
     }
 
-    // Gerar um token JWT específico para redefinição de senha, com expiração curta.
     const resetToken = this.jwtService.sign(
-      { userId: user.id, email: user.email }, // Incluir email no payload para verificação extra
-      { expiresIn: '15m' } // Token válido por 15 minutos
+      { userId: user.id, email: user.email },
+      { expiresIn: '15m' }
     );
     
     const frontendResetUrl = this.configService.get('FRONTEND_RESET_PASSWORD_URL');
-    // Codifica o email para garantir que não haja problemas na URL
     const resetLink = `${frontendResetUrl}?token=${resetToken}&email=${encodeURIComponent(user.email)}`;
 
     try {
       await this.mailerService.sendMail({
         to: user.email,
         subject: 'Redefinição de Senha - Sua Área de Assinantes',
-        template: 'reset-password', // Nome do arquivo HBS sem a extensão
+        template: 'reset-password',
         context: {
-          name: user.name || user.email, // Usa o nome ou o email no template
+          name: user.name || user.email,
           resetUrl: resetLink,
-          expiresIn: 15, // minutos
+          expiresIn: 15,
           year: new Date().getFullYear(),
         },
       });
@@ -229,37 +194,24 @@ export class AuthService {
       return { message: 'Se o email estiver cadastrado, você receberá um link de redefinição.' };
     } catch (error) {
       console.error('Erro ao enviar email de redefinição:', error.message);
-      // Ainda retorna sucesso genérico para não vazar informações, mas loga o erro completo
       return { message: 'Se o email estiver cadastrado, você receberá um link de redefinição.' };
     }
   }
 
   async resetPassword(token: string, email: string, newPassword: string): Promise<{ message: string }> {
     try {
-      // 1. Verificar e decodificar o token
-      // O userId do token será uma string.
       const payload = this.jwtService.verify(token) as { userId: string, email: string };
 
-      // 2. Converta payload.userId para número ANTES de usar na consulta do Prisma
-      const userIdAsNumber = parseInt(payload.userId, 10);
-
-      // Verifica se o ID do usuário no token corresponde ao email fornecido
-      // E se o email no token corresponde ao fornecido
       const user = await this.prisma.user.findUnique({
-        where: { id: userIdAsNumber, email: email }, // <--- LINHA 245 CORRIGIDA AQUI
+        where: { id: payload.userId, email: email },
       });
 
       if (!user || payload.email !== email) {
         throw new BadRequestException('Token inválido ou email não corresponde.');
       }
 
-      // IMPORTANTE: Em uma implementação real, você também verificaria se este token já foi usado
-      // para evitar reuso, salvando o hash do token no DB e marcando-o como usado após o reset.
-
-      // 3. Hash da nova senha
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-      // 4. Atualizar a senha no banco de dados
       await this.prisma.user.update({
         where: { id: user.id },
         data: { password: hashedPassword },
@@ -277,7 +229,6 @@ export class AuthService {
         console.error('Erro de redefinição: Token JWT inválido.', error.message);
         throw new UnauthorizedException('Token de redefinição inválido.');
       }
-      // Re-lança outros erros, como BadRequestException do email não correspondente
       console.error('Erro geral ao redefinir senha:', error.message);
       throw error;
     }

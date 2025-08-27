@@ -4,6 +4,12 @@ import { PrismaService } from '../../prisma/prisma.service';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
+export interface ChatRequest {
+  messages: { sender: string; text: string }[];
+  conversationId?: string;
+  userId: string;
+}
+
 @Injectable()
 export class ConversationService {
   private openai: OpenAI;
@@ -15,7 +21,7 @@ export class ConversationService {
   }
 
   // --- Método para lidar com a lógica de chat ---
-  async handleChatMessage(request: { messages: { sender: string; text: string }[]; conversationId?: string; userId: string; }) {
+  async handleChatMessage(request: ChatRequest) {
     const { messages, conversationId, userId } = request;
 
     if (!messages || messages.length === 0) {
@@ -95,7 +101,6 @@ export class ConversationService {
     }
 
     // Opcional: Atualizar o Título da Conversa
-    // Verificamos se o título ainda é o padrão antes de atualizar com base na primeira mensagem
     if (conversation.title && conversation.title.startsWith('Nova Conversa') && userMessageContent) {
       await this.prisma.conversation.update({
         where: { id: conversation.id },
@@ -119,7 +124,7 @@ export class ConversationService {
       orderBy: { updatedAt: 'desc' },
       select: {
         id: true,
-        title: true, // Adiciona o título na seleção
+        title: true,
         updatedAt: true,
       },
     });
