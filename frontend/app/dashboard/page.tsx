@@ -30,7 +30,7 @@ export default function DashboardPage() {
   // A variável de ambiente do backend
   const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-  const USER_ID_PLACEHOLDER = 1;
+  const USER_ID_PLACEHOLDER = '1';
 
   // Sugestões de perguntas para o início do chat
   const initialSuggestions = [
