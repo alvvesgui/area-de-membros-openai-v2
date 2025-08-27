@@ -26,11 +26,12 @@ export default function DashboardPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const router = useRouter();
-  
+
   // A variável de ambiente do backend
   const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-  const USER_ID_PLACEHOLDER = '1';
+  // CÓDIGO AJUSTADO: Lê o userId do localStorage
+  const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
 
   // Sugestões de perguntas para o início do chat
   const initialSuggestions = [
@@ -49,13 +50,13 @@ export default function DashboardPage() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('access_token');
-      if (!token) {
+      if (!token || !userId) {
         router.push('/login');
         return;
       }
 
       // Linha corrigida: usando a URL completa do backend
-      const response = await fetch(`${API_BASE_URL}/api/conversations?userId=${USER_ID_PLACEHOLDER}`, {
+      const response = await fetch(`${API_BASE_URL}/api/conversations?userId=${userId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -93,13 +94,13 @@ export default function DashboardPage() {
       }
 
       const token = localStorage.getItem('access_token');
-      if (!token) {
+      if (!token || !userId) {
         router.push('/login');
         return;
       }
 
       // Linha corrigida: usando a URL completa do backend
-      const response = await fetch(`${API_BASE_URL}/api/conversations/${convId}?userId=${USER_ID_PLACEHOLDER}`, {
+      const response = await fetch(`${API_BASE_URL}/api/conversations/${convId}?userId=${userId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -143,13 +144,13 @@ export default function DashboardPage() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('access_token');
-      if (!token) {
+      if (!token || !userId) {
         router.push('/login');
         return;
       }
 
       // Linha corrigida: usando a URL completa do backend
-      const response = await fetch(`${API_BASE_URL}/api/conversations/${convIdToDelete}?userId=${USER_ID_PLACEHOLDER}`, {
+      const response = await fetch(`${API_BASE_URL}/api/conversations/${convIdToDelete}?userId=${userId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -192,11 +193,11 @@ export default function DashboardPage() {
 
     try {
       const token = localStorage.getItem('access_token');
-      if (!token) {
+      if (!token || !userId) {
         router.push('/login');
         return;
       }
-      
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/chat`, {
         method: 'POST',
         headers: {
@@ -206,7 +207,7 @@ export default function DashboardPage() {
         body: JSON.stringify({
           messages: [...messages, newUserMessage],
           conversationId: conversationId,
-          userId: USER_ID_PLACEHOLDER,
+          userId: userId, // AJUSTE: Enviando o userId correto
         }),
       });
 

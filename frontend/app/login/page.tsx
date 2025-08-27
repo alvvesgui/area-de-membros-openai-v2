@@ -57,6 +57,7 @@ export default function LoginPage() {
       const data = await response.json();
       localStorage.setItem("access_token", data.access_token);
       localStorage.setItem("is_subscriber", data.isSubscriber);
+      localStorage.setItem("user_id", data.userId); // ADIÇÃO: Salva o ID do usuário
       router.push("/dashboard");
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -91,6 +92,7 @@ export default function LoginPage() {
       const data = await response.json();
       localStorage.setItem("access_token", data.access_token);
       localStorage.setItem("is_subscriber", data.isSubscriber);
+      localStorage.setItem("user_id", data.userId); // ADIÇÃO: Salva o ID do usuário
       router.push("/dashboard");
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -141,7 +143,7 @@ export default function LoginPage() {
               <Image src="/images/LOGO_LEADRIX.png" alt="Logo" width={100} height={30} className="h-auto w-24" priority />
             </div>
             <div className="relative flex-1">
-             
+              
               <Image
                 src="/images/imagefront.png"
                 alt="Pessoa interagindo com IA em ambiente futurista e tecnológico"
