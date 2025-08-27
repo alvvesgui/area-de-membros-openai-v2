@@ -1,4 +1,4 @@
-// Forçando um novo deploy na Vercel
+// frontend/app/dashboard/page.tsx (ou o caminho do seu arquivo de dashboard)
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -27,6 +27,9 @@ export default function DashboardPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const router = useRouter();
+  
+  // A variável de ambiente do backend
+  const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   const USER_ID_PLACEHOLDER = 1;
 
@@ -52,7 +55,8 @@ export default function DashboardPage() {
         return;
       }
 
-      const response = await fetch(`/api/conversations?userId=${USER_ID_PLACEHOLDER}`, {
+      // Linha corrigida: usando a URL completa do backend
+      const response = await fetch(`${API_BASE_URL}/api/conversations?userId=${USER_ID_PLACEHOLDER}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -94,7 +98,8 @@ export default function DashboardPage() {
         return;
       }
 
-      const response = await fetch(`/api/conversations/${convId}?userId=${USER_ID_PLACEHOLDER}`, {
+      // Linha corrigida: usando a URL completa do backend
+      const response = await fetch(`${API_BASE_URL}/api/conversations/${convId}?userId=${USER_ID_PLACEHOLDER}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -143,7 +148,8 @@ export default function DashboardPage() {
         return;
       }
 
-      const response = await fetch(`/api/conversations/${convIdToDelete}?userId=${USER_ID_PLACEHOLDER}`, {
+      // Linha corrigida: usando a URL completa do backend
+      const response = await fetch(`${API_BASE_URL}/api/conversations/${convIdToDelete}?userId=${USER_ID_PLACEHOLDER}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -190,7 +196,7 @@ export default function DashboardPage() {
         router.push('/login');
         return;
       }
-
+      
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/chat`, {
         method: 'POST',
         headers: {
@@ -337,6 +343,13 @@ export default function DashboardPage() {
             className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50 transition duration-200 ease-in-out mb-2 text-base font-medium"
           >
             Ajuda
+          </button>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 transition duration-200 ease-in-out text-base font-medium shadow-md"
+            title="Sair da aplicação"
+          >
+            Sair
           </button>
         </div>
       </div>
