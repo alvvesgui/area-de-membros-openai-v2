@@ -1,4 +1,3 @@
-// frontend/app/dashboard/page.tsx (ou o caminho do seu arquivo de dashboard)
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -78,9 +77,10 @@ export default function DashboardPage() {
     }
   };
 
+  // CÓDIGO CORRIGIDO: O useEffect agora roda apenas uma vez
   useEffect(() => {
     fetchConversations();
-  }, [fetchConversations]);
+  }, []);
 
   const loadConversation = async (convId: string) => {
     setIsLoading(true);
