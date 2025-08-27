@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
 
     while (run.status !== 'completed') {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      run = await openai.beta.threads.runs.retrieve(run.id, { thread_id: threadId });
+      run = await openai.beta.threads.runs.retrieve(threadId, run.id);
     }
 
     // Busca todas as mensagens da thread
