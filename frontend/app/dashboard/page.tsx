@@ -30,9 +30,6 @@ export default function DashboardPage() {
   // A variável de ambiente do backend
   const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-  // CÓDIGO AJUSTADO: Lê o userId do localStorage
-  const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
-
   // Sugestões de perguntas para o início do chat
   const initialSuggestions = [
     'Qual o preço dos seus serviços?',
@@ -50,12 +47,13 @@ export default function DashboardPage() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('access_token');
+      // AJUSTE: Lê o userId do localStorage e verifica se existe
+      const userId = localStorage.getItem('user_id');
       if (!token || !userId) {
         router.push('/login');
         return;
       }
 
-      // Linha corrigida: usando a URL completa do backend
       const response = await fetch(`${API_BASE_URL}/api/conversations?userId=${userId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -78,7 +76,6 @@ export default function DashboardPage() {
     }
   };
 
-  // CÓDIGO CORRIGIDO: O useEffect agora roda apenas uma vez
   useEffect(() => {
     fetchConversations();
   }, []);
@@ -94,12 +91,13 @@ export default function DashboardPage() {
       }
 
       const token = localStorage.getItem('access_token');
+      // AJUSTE: Lê o userId do localStorage e verifica se existe
+      const userId = localStorage.getItem('user_id');
       if (!token || !userId) {
         router.push('/login');
         return;
       }
 
-      // Linha corrigida: usando a URL completa do backend
       const response = await fetch(`${API_BASE_URL}/api/conversations/${convId}?userId=${userId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -144,12 +142,13 @@ export default function DashboardPage() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('access_token');
+      // AJUSTE: Lê o userId do localStorage e verifica se existe
+      const userId = localStorage.getItem('user_id');
       if (!token || !userId) {
         router.push('/login');
         return;
       }
 
-      // Linha corrigida: usando a URL completa do backend
       const response = await fetch(`${API_BASE_URL}/api/conversations/${convIdToDelete}?userId=${userId}`, {
         method: 'DELETE',
         headers: {
@@ -193,6 +192,8 @@ export default function DashboardPage() {
 
     try {
       const token = localStorage.getItem('access_token');
+      // AJUSTE: Lê o userId do localStorage e verifica se existe
+      const userId = localStorage.getItem('user_id');
       if (!token || !userId) {
         router.push('/login');
         return;
@@ -207,7 +208,7 @@ export default function DashboardPage() {
         body: JSON.stringify({
           messages: [...messages, newUserMessage],
           conversationId: conversationId,
-          userId: userId, // AJUSTE: Enviando o userId correto
+          userId: userId,
         }),
       });
 
