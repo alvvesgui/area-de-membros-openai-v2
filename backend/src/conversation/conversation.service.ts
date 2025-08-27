@@ -1,37 +1,24 @@
 // backend/src/conversation/conversation.service.ts
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service'; // Caminho para o PrismaService
+import { PrismaService } from '../../prisma/prisma.service';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
-
-// Tipagens para o que o frontend enviará
-interface Message {
-  sender: 'user' | 'agent';
-  text: string;
-}
-
-// Altere a tipagem de userId para string
-export interface ChatRequest {
-  messages: Message[];
-  conversationId?: string;
-  userId: string; // userId agora é string
-}
 
 @Injectable()
 export class ConversationService {
   private openai: OpenAI;
 
-  constructor(private prisma: PrismaService) { // Injeta o PrismaService
+  constructor(private prisma: PrismaService) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
   }
 
   // --- Método para lidar com a lógica de chat ---
-  async handleChatMessage(request: ChatRequest) {
+  async handleChatMessage(request: { messages: { sender: string; text: string }[]; conversationId?: string; userId: string; }) {
     const { messages, conversationId, userId } = request;
 
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    if (!messages || messages.length === 0) {
       throw new BadRequestException('Mensagens inválidas.');
     }
     if (!userId) {
@@ -40,9 +27,7 @@ export class ConversationService {
 
     const userMessageContent = messages[messages.length - 1].text;
 
-    let currentConversationId: string;
-    let conversation: any;
-    let agentResponseText: string | null | undefined;
+    let conversation;
 
     if (conversationId) {
       conversation = await this.prisma.conversation.findUnique({
@@ -53,10 +38,12 @@ export class ConversationService {
       if (!conversation) {
         throw new NotFoundException('Conversa não encontrada.');
       }
-      currentConversationId = conversation.id;
+
+      if (conversation.userId !== userId) {
+        throw new BadRequestException('Você não tem permissão para acessar esta conversa.');
+      }
+
     } else {
-      // É uma NOVA conversa
-      // A busca por ID agora usa uma string
       const userExists = await this.prisma.user.findUnique({ where: { id: userId } });
       if (!userExists) {
         throw new BadRequestException('Usuário não encontrado no sistema.');
@@ -64,25 +51,24 @@ export class ConversationService {
 
       conversation = await this.prisma.conversation.create({
         data: {
-          userId: userId, // O userId é passado como string
+          userId: userId,
           title: `Nova Conversa - ${new Date().toLocaleDateString('pt-BR')}`,
         },
         include: { messages: true },
       });
-      currentConversationId = conversation.id;
     }
 
     // 1. Salvar a Mensagem do Usuário
     await this.prisma.message.create({
       data: {
-        conversationId: currentConversationId,
+        conversationId: conversation.id,
         sender: 'user',
         text: userMessageContent,
       },
     });
 
     // ... (restante da lógica de chamada da OpenAI) ...
-    const openaiMessages: ChatCompletionMessageParam[] = messages.map((msg: Message) => {
+    const openaiMessages: ChatCompletionMessageParam[] = messages.map((msg: { sender: string; text: string }) => {
       const role: "user" | "assistant" = msg.sender === 'user' ? 'user' : 'assistant';
       return {
         role: role,
@@ -95,52 +81,50 @@ export class ConversationService {
       messages: openaiMessages,
     });
 
-    agentResponseText = completion.choices[0].message.content;
+    const agentResponseText = completion.choices[0].message.content;
 
     // 3. Salvar a Mensagem do Agente
     if (agentResponseText) {
       await this.prisma.message.create({
         data: {
-          conversationId: currentConversationId,
-          sender: 'agent',
+          conversationId: conversation.id,
+          sender: 'assistant',
           text: agentResponseText,
         },
       });
     }
 
-    // 4. Opcional: Atualizar o Título da Conversa
-    if (conversation.title.startsWith('Nova Conversa') && userMessageContent) {
+    // Opcional: Atualizar o Título da Conversa
+    // Verificamos se o título ainda é o padrão antes de atualizar com base na primeira mensagem
+    if (conversation.title && conversation.title.startsWith('Nova Conversa') && userMessageContent) {
       await this.prisma.conversation.update({
-        where: { id: currentConversationId },
+        where: { id: conversation.id },
         data: { title: userMessageContent.substring(0, 50) + (userMessageContent.length > 50 ? '...' : '') },
       });
     }
 
     return {
       response: agentResponseText,
-      conversationId: currentConversationId,
+      conversationId: conversation.id,
     };
   }
 
   // --- Métodos para gerenciar o histórico de conversas ---
-  // Altere a tipagem do userId para string
   async getAllConversations(userId: string) {
     if (!userId) {
       throw new BadRequestException('ID do usuário é necessário para listar conversas.');
     }
-    // A busca no Prisma agora usa o ID como string
     return this.prisma.conversation.findMany({
       where: { userId: userId },
       orderBy: { updatedAt: 'desc' },
       select: {
         id: true,
-        title: true,
+        title: true, // Adiciona o título na seleção
         updatedAt: true,
       },
     });
   }
 
-  // Altere a tipagem do userId para string
   async getSingleConversation(conversationId: string, userId: string) {
     if (!conversationId) {
       throw new BadRequestException('ID da conversa é necessário.');
@@ -157,7 +141,6 @@ export class ConversationService {
     if (!conversation) {
       throw new NotFoundException('Conversa não encontrada.');
     }
-    // A validação de segurança também usa a string
     if (conversation.userId !== userId) {
       throw new BadRequestException('Você não tem permissão para acessar esta conversa.');
     }
@@ -166,13 +149,11 @@ export class ConversationService {
   }
 
   // --- Método para excluir uma conversa ---
-  // Altere a tipagem do userId para string
   async deleteConversation(conversationId: string, userId: string) {
     if (!conversationId) {
       throw new BadRequestException('ID da conversa é necessário para exclusão.');
     }
 
-    // A busca e a validação de segurança usarão a string
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
     });
@@ -181,7 +162,6 @@ export class ConversationService {
       throw new NotFoundException('Conversa não encontrada para exclusão.');
     }
     
-    // A validação de segurança também usa a string
     if (conversation.userId !== userId) {
       throw new BadRequestException('Você não tem permissão para excluir esta conversa.');
     }

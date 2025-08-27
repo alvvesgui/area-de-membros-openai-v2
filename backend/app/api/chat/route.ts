@@ -12,7 +12,7 @@ const ASSISTANT_ID = 'asst_t7FWCeeQmALVKhbyf4UfsFHJ';
 interface ChatRequestBody {
   messages: { text: string }[];
   conversationId?: string;
-  userId: number;
+  userId: string; // CORREÇÃO: userId agora é string
 }
 
 export async function POST(request: NextRequest) {
@@ -22,8 +22,17 @@ export async function POST(request: NextRequest) {
 
     let convId = conversationId;
 
-    // Se não tiver conversa, cria uma nova no banco
+    // Se não houver conversa, cria uma nova
     if (!convId) {
+      // Verifica se o usuário existe
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        return NextResponse.json({ message: 'Usuário não encontrado.' }, { status: 404 });
+      }
+
       const newConversation = await prisma.conversation.create({
         data: {
           userId,

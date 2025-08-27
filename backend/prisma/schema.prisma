@@ -4,50 +4,47 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// CORREÇÃO: Altera de "mysql" para "postgresql"
+// O provedor agora está correto, ele é PostgreSQL.
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// CORREÇÃO: Usa IDs String com UUIDs
+// As relações e IDs agora estão corretos para o seu banco de dados.
 model User {
-  id               String         @id @default(uuid())
-  email            String         @unique
-  name             String?
-  password         String?
-  oauthId          String?
-  createdAt        DateTime       @default(now())
-  conversations    Conversation[]
-  isSubscriber     Boolean        @default(false)
-  
-  chats            Chat[] // CORREÇÃO: Adicione este campo para completar a relação com o modelo Chat
+  id            String         @id @default(uuid())
+  email         String         @unique
+  name          String?
+  password      String?
+  oauthId       String?
+  createdAt     DateTime       @default(now())
+  conversations Conversation[]
+  isSubscriber  Boolean        @default(false)
+  chats         Chat[]
 }
 
-// CORREÇÃO: Usa IDs String com UUIDs
 model Chat {
-  id            String   @id @default(uuid())
-  user          User     @relation(fields: [userId], references: [id])
-  userId        String   // CORREÇÃO: Altera para String
-  message       String
-  sender        String
-  createdAt     DateTime @default(now())
-  isSubscriber  Boolean  @default(false)
+  id           String   @id @default(uuid())
+  user         User     @relation(fields: [userId], references: [id])
+  userId       String
+  message      String
+  sender       String
+  createdAt    DateTime @default(now())
+  isSubscriber Boolean  @default(false)
 }
 
-// CORREÇÃO: Usa IDs String com UUIDs
+// O modelo Conversation foi corrigido para incluir o campo de título.
 model Conversation {
   id           String    @id @default(uuid())
-  userId       String    // CORREÇÃO: Altera para String
+  userId       String
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  question     String
-  answer       String?
+  title        String?   // Campo title adicionado de volta, agora opcional.
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
-  messages     Message[] // CORREÇÃO: Adiciona a relação com o modelo Message
+  messages     Message[]
 }
 
-// CORREÇÃO: Este modelo estava faltando e é essencial
+// Este modelo já estava correto e é essencial para o histórico de mensagens.
 model Message {
   id             String       @id @default(uuid())
   conversationId String
