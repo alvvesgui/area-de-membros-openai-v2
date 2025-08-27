@@ -16,7 +16,7 @@ import { getChatHistory } from '../chatService';
 // correspondendo ao que o seu backend (Prisma ChatHistory) retorna.
 interface Conversation {
   id: number;
-  userId: number;
+  userId: string;
   question: string;
   answer?: string;
   timestamp: string; 

@@ -10,7 +10,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:33
 // correspondendo ao que o backend (Prisma ChatHistory) retorna.
 interface ChatHistoryItem {
   id: number;
-  userId: number;
+  userId: string;
   question: string;
   answer?: string; // A resposta é opcional no seu modelo do backend
   timestamp: string; // Data e hora da conversa
