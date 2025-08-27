@@ -123,10 +123,21 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: resetEmail }),
       });
+
       const data = await response.json();
-      setResetMessage(response.ok ? data.message : data.error);
-    } catch (err) {
-      setResetMessage("Ocorreu um erro. Tente novamente.");
+
+      if (!response.ok) {
+        // Trata a resposta de erro, que contém a mensagem na propriedade 'message'
+        throw new Error(data.message || "Ocorreu um erro desconhecido.");
+      }
+
+      // Se a resposta for OK, exibe a mensagem de sucesso
+      setResetMessage("E-mail de redefinição enviado com sucesso! Verifique sua caixa de entrada.");
+      setIsDialogOpen(true); // Mantém o modal aberto para mostrar a mensagem
+
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Ocorreu um erro desconhecido.";
+      setResetMessage(errorMessage);
       console.error("Erro ao enviar e-mail de redefinição:", err);
     } finally {
       setIsResetting(false);
@@ -143,7 +154,7 @@ export default function LoginPage() {
               <Image src="/images/LOGO_LEADRIX.png" alt="Logo" width={100} height={30} className="h-auto w-24" priority />
             </div>
             <div className="relative flex-1">
-              
+
               <Image
                 src="/images/imagefront.png"
                 alt="Pessoa interagindo com IA em ambiente futurista e tecnológico"
